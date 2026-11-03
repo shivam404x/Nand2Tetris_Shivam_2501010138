@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hack Computer Live Emulator - Box.asm (K=38)</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #1a1a24;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: #242533;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      padding: 24px;
+      border: 1px solid #38394e;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 22px;
+      color: #60a5fa;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge {
+      background: #2563eb;
+      color: white;
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .meta-bar {
+      display: flex;
+      gap: 18px;
+      font-size: 13px;
+      color: #94a3b8;
+      background: #1e1e2d;
+      padding: 10px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .meta-bar strong {
+      color: #f1f5f9;
+    }
+    .screen-wrapper {
+      background: #111;
+      padding: 12px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 2px solid #334155;
+    }
+    canvas {
+      background: #ffffff;
+      image-rendering: pixelated;
+      border: 1px solid #475569;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      cursor: pointer;
+    }
+    .screen-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      color: #94a3b8;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .controls {
+      margin-top: 18px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    button:active {
+      background: #1e40af;
+      transform: scale(0.98);
+    }
+    .btn-press {
+      background: #059669;
+    }
+    .btn-press:hover {
+      background: #047857;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .stat-card {
+      background: #1e1e2d;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #33344a;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+    .stat-value {
+      font-size: 16px;
+      font-weight: bold;
+      color: #f8fafc;
+      margin-top: 4px;
+      font-family: monospace;
+    }
+    .key-indicator {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #ef4444;
+      color: white;
+      font-size: 11px;
+    }
+    .key-active {
+      background: #10b981;
+    }
+    .instruction-note {
+      margin-top: 16px;
+      background: #1e293b;
+      border-left: 4px solid #38bdf8;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>
+    Hack Computer Live Emulator
+    <span class="badge">Nand to Tetris Capstone</span>
+  </h1>
+
+  <div class="meta-bar">
+    <div>Student: <strong>Shivam Kumar Roy</strong></div>
+    <div>Roll No: <strong>2501010138</strong></div>
+    <div>Personal Number K: <strong>38</strong></div>
+    <div>Box: <strong>Row 38 | 48px wide x 20 rows tall</strong></div>
+  </div>
+
+  <div class="screen-wrapper">
+    <div class="screen-header">
+      <span>Hack Screen Memory Map (512 &times; 256 Monochrome)</span>
+      <span id="fpsDisplay">FPS: 60 | Clock: Running</span>
+    </div>
+    <canvas id="screenCanvas" width="512" height="256"></canvas>
+  </div>
+
+  <div class="controls">
+    <button id="pressKeyBtn" class="btn-press" onmousedown="holdKey(75)" onmouseup="releaseKey()" ontouchstart="holdKey(75)" ontouchend="releaseKey()">
+      Press & Hold Any Key (or Mouse)
+    </button>
+    <button onclick="toggleRunning()" id="runPauseBtn">Pause</button>
+    <button onclick="resetEmulator()">Reset</button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Keyboard Status</div>
+      <div class="stat-value" id="kbdVal"><span class="key-indicator">Idle (0)</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">PC & Registers</div>
+      <div class="stat-value" id="regVal">PC: 0 | D: 0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">RAM[16] (color)</div>
+      <div class="stat-value" id="colorVal">0 (White)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">RAM[17] (addr)</div>
+      <div class="stat-value" id="addrVal">17600 (Row 38)</div>
+    </div>
+  </div>
+
+  <div class="instruction-note">
+    💡 <strong>How to test:</strong> Click and hold the green button above, OR simply press and hold any keyboard key on your keyboard! Notice the black rectangular box appear instantly at Row 38 (48 pixels wide, 20 rows tall). When you release the key, the box disappears instantly!
+  </div>
+</div>
+
+<script>
+// Hack Machine Code generated by assembler.py for Box.asm
+const ROM = [
+  0x6000, 0xFC10, 0x0008, 0xE305, 0x0010, 0xEA88, 0x000A, 0xEA87,
+  0x0010, 0xEE88, 0x44C0, 0xEC10, 0x0011, 0xE308, 0x0014, 0xEC10,
+  0x0012, 0xE308, 0x0012, 0xFC10, 0x0000, 0xE302, 0x0010, 0xFC10,
+  0x0011, 0xFC20, 0xE308, 0x0011, 0xFD88, 0x0010, 0xFC10, 0x0011,
+  0xFC20, 0xE308, 0x0011, 0xFD88, 0x0010, 0xFC10, 0x0011, 0xFC20,
+  0xE308, 0x001E, 0xEC10, 0x0011, 0xF088, 0x0012, 0xFC88, 0x0012,
+  0xEA87
+];
+
+const RAM = new Int16Array(32768);
+let pc = 0, regA = 0, regD = 0;
+let isRunning = true;
+let currentKey = 0;
+
+const canvas = document.getElementById("screenCanvas");
+const ctx = canvas.getContext("2d");
+const imgData = ctx.createImageData(512, 256);
+const buf32 = new Uint32Array(imgData.data.buffer);
+
+function stepCPU() {
+  if (pc >= ROM.length) pc = 0;
+  RAM[24576] = currentKey; // KBD
+
+  const instr = ROM[pc];
+  if ((instr & 0x8000) === 0) {
+    regA = instr;
+    pc++;
+  } else {
+    const aBit = (instr >> 12) & 1;
+    const comp = (instr >> 6) & 0x3F;
+    const dest = (instr >> 3) & 7;
+    const jump = instr & 7;
+
+    const y = aBit ? RAM[regA & 0x7FFF] : regA;
+    const x = regD;
+
+    const zx = (comp >> 5) & 1;
+    const nx = (comp >> 4) & 1;
+    const zy = (comp >> 3) & 1;
+    const ny = (comp >> 2) & 1;
+    const f  = (comp >> 1) & 1;
+    const no = comp & 1;
+
+    let xVal = zx ? 0 : x;
+    if (nx) xVal = (~xVal) & 0xFFFF;
+    let yVal = zy ? 0 : y;
+    if (ny) yVal = (~yVal) & 0xFFFF;
+
+    let out = f ? (xVal + yVal) : (xVal & yVal);
+    if (no) out = (~out) & 0xFFFF;
+    out = (out << 16) >> 16; // Sign extend to 16 bits
+
+    const zr = (out === 0);
+    const ng = (out < 0);
+    const pos = (out > 0);
+
+    if (dest & 1) RAM[regA & 0x7FFF] = out;
+    if (dest & 2) regD = out;
+    if (dest & 4) regA = out & 0x7FFF;
+
+    const doJump = (jump & 1 && pos) || (jump & 2 && zr) || (jump & 4 && ng);
+    if (doJump) {
+      pc = regA;
+    } else {
+      pc++;
+    }
+  }
+}
+
+function updateCanvas() {
+  // Update Screen Memory Map: 16384 to 24575 (8192 words)
+  let p = 0;
+  for (let r = 0; r < 256; r++) {
+    for (let c = 0; c < 32; c++) {
+      const word = RAM[16384 + r * 32 + c];
+      for (let b = 0; b < 16; b++) {
+        const isBlack = (word >> b) & 1;
+        buf32[p++] = isBlack ? 0xFF000000 : 0xFFFFFFFF;
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  // Update UI Stats
+  const kbdElem = document.getElementById("kbdVal");
+  if (currentKey !== 0) {
+    kbdElem.innerHTML = `<span class="key-indicator key-active">Pressed (code: ${currentKey})</span>`;
+  } else {
+    kbdElem.innerHTML = `<span class="key-indicator">Idle (0)</span>`;
+  }
+
+  document.getElementById("regVal").innerText = `PC: ${pc} | D: ${regD} | A: ${regA}`;
+  const cVal = RAM[16];
+  document.getElementById("colorVal").innerText = cVal === -1 ? "-1 (Black)" : `${cVal} (White)`;
+  document.getElementById("addrVal").innerText = `${RAM[17]} (Row ${Math.floor((RAM[17]-16384)/32)})`;
+}
+
+function loop() {
+  if (isRunning) {
+    // Run multiple CPU cycles per frame for smooth 60fps simulation
+    for (let i = 0; i < 4000; i++) {
+      stepCPU();
+    }
+    updateCanvas();
+  }
+  requestAnimationFrame(loop);
+}
+
+function holdKey(code) {
+  currentKey = code;
+}
+
+function releaseKey() {
+  currentKey = 0;
+}
+
+function toggleRunning() {
+  isRunning = !isRunning;
+  document.getElementById("runPauseBtn").innerText = isRunning ? "Pause" : "Resume";
+}
+
+function resetEmulator() {
+  RAM.fill(0);
+  pc = 0;
+  regA = 0;
+  regD = 0;
+  currentKey = 0;
+  updateCanvas();
+}
+
+window.addEventListener("keydown", (e) => {
+  currentKey = e.keyCode || 75;
+});
+
+window.addEventListener("keyup", () => {
+  currentKey = 0;
+});
+
+// Start loop
+requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>
