@@ -1,0 +1,35 @@
+// Symbol Table for Box.asm
+// Total symbols: 30
+
+SYMBOL               DEC        HEX       
+----------------------------------------
+ARG                  2          0x0002
+DRAW_INIT            10         0x000A
+KBD                  24576      0x6000
+KEY_PRESSED          8          0x0008
+LCL                  1          0x0001
+MAIN_LOOP            0          0x0000
+R0                   0          0x0000
+R1                   1          0x0001
+R10                  10         0x000A
+R11                  11         0x000B
+R12                  12         0x000C
+R13                  13         0x000D
+R14                  14         0x000E
+R15                  15         0x000F
+R2                   2          0x0002
+R3                   3          0x0003
+R4                   4          0x0004
+R5                   5          0x0005
+R6                   6          0x0006
+R7                   7          0x0007
+R8                   8          0x0008
+R9                   9          0x0009
+ROW_LOOP             18         0x0012
+SCREEN               16384      0x4000
+SP                   0          0x0000
+THAT                 4          0x0004
+THIS                 3          0x0003
+addr                 17         0x0011
+color                16         0x0010
+rows_left            18         0x0012
